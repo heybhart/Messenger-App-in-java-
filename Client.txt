@@ -1,0 +1,134 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+import java.net.*;
+
+public class Client {
+
+    private static final String SERVER_ADDRESS = "127.0.0.1";
+    private static final int PORT = 5555;
+
+    public static void main(String[] args) {
+
+        JFrame frame = new JFrame("Chat Application");
+        frame.setBounds(300, 150, 400, 600);
+        frame.setLayout(null);
+
+
+        JLabel onlineLabel = new JLabel("ONLINE PERSONS");
+        onlineLabel.setBounds(50, 0, 300, 50);
+        onlineLabel.setFont(new Font("Monospaced", Font.BOLD, 20));
+        onlineLabel.setForeground(Color.GREEN);
+        frame.add(onlineLabel);
+
+
+        JTextArea chatArea = new JTextArea();
+        chatArea.setFont(new Font("Serif", Font.BOLD, 18));
+        chatArea.setEditable(false);  // Make it non-editable
+        chatArea.setBorder(BorderFactory.createEtchedBorder());
+
+
+        JScrollPane scrollPane = new JScrollPane(chatArea);
+        scrollPane.setBounds(0, 50, 380, 400);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        frame.add(scrollPane);
+
+
+        JTextField msgInput = new JTextField();
+        msgInput.setBounds(30, 470, 200, 30);
+        frame.add(msgInput);
+
+
+        JButton sendBtn = new JButton("Send");
+        sendBtn.setBounds(250, 470, 100, 30);
+        frame.add(sendBtn);
+
+//        ===============================================   ONLINE PERSONS GUI ====================================================================
+
+
+        JFrame frame2 = new JFrame("Online Persons");
+        frame2.setLayout(null);
+        frame2.setBounds(800, 150, 400, 400);
+        frame2.getContentPane().setBackground(new Color(72, 70, 68));
+
+        JLabel label2 = new JLabel("Client Online");
+        label2.setBounds(50, 0, 300, 40);
+        label2.setForeground(Color.green);
+        label2.setFont(new Font("heybabeMonospaced", Font.BOLD, 13));
+        frame2.add(label2);
+
+        JTextArea textarea2 = new JTextArea();
+        textarea2.setBounds(0,50,400,300);
+        textarea2.setBackground(new Color(72,70,68));
+        textarea2.setEnabled(false);
+        frame2.add(textarea2);
+
+        frame2.setVisible(true);
+        frame2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+
+
+        try {
+            Socket socket = new Socket(SERVER_ADDRESS, PORT); // Connect to the server
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream())); // For receiving messages
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);  // For sending messages
+
+
+            sendBtn.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String msgToSend = msgInput.getText();
+                    if (!msgToSend.isEmpty()) {
+                        out.println(msgToSend);  // Send the message to the server
+                        chatArea.append("Me: " + msgToSend + "\n");  // Display the message in the chat area
+                        msgInput.setText("");
+                    }
+                }
+            });
+
+            new Thread(() -> {
+                String receivedMsg;
+                try {
+                    while ((receivedMsg = in.readLine()) != null) {
+                        if (receivedMsg.startsWith("ONLINE_USERS:")) {
+                            // This is the list of online users
+                            String[] users = receivedMsg.substring("ONLINE_USERS:".length()).split(","); // Split the message to get the user list
+                            SwingUtilities.invokeLater(() -> {
+                                textarea2.setText(""); // Clear the previous online users list
+                                for (String user : users) {
+                                    if (!user.trim().isEmpty()) {
+                                        textarea2.append(user + "  " + "🟢\n"); // Display each user with green dot
+                                    }
+                                }
+                            });
+                        } else {
+                            // Regular chat message, display it in the chat area
+                            chatArea.append("Receive: " + receivedMsg + "\n");
+                        }
+                    }
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }).start();
+
+//            new Thread(() -> {
+//                String receivedMsg;
+//                try {
+//                    while ((receivedMsg = in.readLine()) != null) {
+//                        chatArea.append("Receive: " + receivedMsg + "\n");
+//                    }
+//                } catch (IOException ex) {
+//                    ex.printStackTrace();
+//                }
+//            }).start();
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+}

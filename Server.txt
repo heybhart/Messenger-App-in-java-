@@ -1,0 +1,268 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.io.*;
+import java.net.*;
+import javax.swing.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+
+class guiclass extends Thread
+{
+
+}
+
+public class Main extends guiclass
+{
+    public static String clientname;
+    static Socket clientSocket = null;
+    static JFrame fo;
+    static JTextArea area;
+    static JTextArea textarea2;
+    private static final int PORT = 5555;
+    private static Set<PrintWriter> clientWriters = new HashSet<>();
+    private static Set<String> clientNames = new HashSet<>(); // New Set to store client names
+
+    public static void main(String[] args)
+    {
+        guiclass t = new guiclass();
+        t.start();
+//        while(true)
+//        {
+//            if(t.counter == 0)
+//            {
+//                System.out.println("value ; "+t.counter);
+//            }
+//            else
+//            {
+//                break;
+//            }
+//        }
+
+        new Thread(() -> {
+            fo = new JFrame();
+
+            JLabel heading = new JLabel("MONITOR MODE");
+            heading.setBounds(100,0, 300, 50);
+            heading.setFont(new Font("Serif", Font.BOLD, 30));
+            fo.add(heading);
+
+            area = new JTextArea();
+            area.setFont(new Font("Serif", Font.BOLD, 20));;
+            area.setEnabled(false);
+            area.setForeground(Color.BLACK);
+            area.setBorder(BorderFactory.createEtchedBorder());
+            JScrollPane scrollV = new JScrollPane (area);
+            scrollV.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+            scrollV.setBounds(0, 40, 500, 400);
+            fo.add(scrollV);
+
+            fo.setLayout(null);
+            fo.setBounds(200, 200, 400, 500);
+            fo.setSize(520, 500);
+            fo.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            fo.setVisible(true);
+        }).start();
+
+        new Thread(() -> {
+            JFrame frame = new JFrame("Online Persons");
+            frame.setLayout(null);
+            frame.setBounds(800, 150, 400, 400);
+            frame.getContentPane().setBackground(new Color(72, 70, 68));
+
+            JLabel label = new JLabel("Client Online");
+            label.setBounds(50, 0, 300, 40);
+            label.setForeground(Color.green);
+            label.setFont(new Font("heybabeMonospaced", Font.BOLD, 13));
+            frame.add(label);
+
+            textarea2 = new JTextArea();
+            textarea2.setBounds(0,50,400,300);
+            textarea2.setBackground(new Color(72,70,68));
+            textarea2.setEnabled(false);
+            frame.add(textarea2);
+
+            frame.setVisible(true);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        }).start();
+
+        System.out.println("Server started...");
+
+        try (ServerSocket serverSocket = new ServerSocket(PORT))
+        {
+            while (true)
+            {
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("Client connected: "  + clientSocket.getInetAddress().getHostName());
+                clientname = clientSocket.getInetAddress().getHostName() + "⦿" + "🟢";
+                area.append("Client connected: " + clientSocket.getRemoteSocketAddress()+"\n");
+                new ClientHandler(clientSocket, area, clientname, textarea2).start();
+            }
+        }
+        catch (Exception e)
+        {
+            System.out.println(e);
+        }
+    }
+
+    private static class ClientHandler extends Thread
+    {
+        private Socket socket;
+        private PrintWriter out;
+        private BufferedReader in;
+        private String clientName;
+        private JTextArea textarea2;
+
+        public ClientHandler(Socket socket, JTextArea area , String clientname , JTextArea textarea2)
+        {
+            this.socket = socket;
+            this.clientName = clientname;
+            this.textarea2 = textarea2;
+        }
+
+        public void run()
+        {
+            try
+            {
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                out = new PrintWriter(socket.getOutputStream(), true);
+
+                synchronized(clientWriters)
+                {
+                    clientWriters.add(out); // Add Output Stream of every client in ClientWriter , for send the message to everyone whoever is connected
+                }
+
+                synchronized(clientNames)
+                {
+                    clientNames.add(clientName); // Add client name
+                    updateOnlineClients(); // Update the list of clients
+                }
+                String message;
+                while ((message = in.readLine()) != null) {
+                    System.out.println("Received: " + message);
+                    area.append(this.clientName + ": " + message + "\n");
+
+                    if (message.startsWith("@")) {
+                        // Extract the target username and the actual message
+                        int colonIndex = message.indexOf(":");
+                        if (colonIndex != -1) {
+                            String targetUser = message.substring(1, colonIndex).trim(); // Username between '@' and ':'
+                            String privateMessage = message.substring(colonIndex + 1).trim(); // Message after ':'
+
+                            // Send message only to the specified user
+                            sendPrivateMessage(targetUser, privateMessage);
+                        }
+                    } else {
+                        broadcast(message); // Regular message broadcast
+                    }
+                }
+//                String message;
+//                while ((message = in.readLine()) != null)
+//                {
+//                    System.out.println("Received: " + message);
+//                    area.append(this.clientName + ": " + message + "\n");
+//                    broadcast(message);
+//                }
+            }
+            catch (Exception e)
+            {
+                System.out.println(e);
+            }
+            finally
+            {
+                try
+                {
+                    socket.close();
+                }
+                catch (Exception e)
+                {
+                    System.out.println(e);
+                }
+//                synchronized(clientWriters)
+//                {
+//                    clientWriters.remove(out);
+//                }
+
+                synchronized(clientNames)
+                {
+                    clientNames.remove(clientName); // Remove the client on disconnect
+                    updateOnlineClients(); // Update the list of clients
+                }
+            }
+        }
+        private PrintWriter findWriterForUser(String targetUser) {
+            synchronized(clientWriters) {
+                for (PrintWriter writer : clientWriters) {
+                    if (clientNames.contains(targetUser)) {
+                        return writer;
+                    }
+                }
+            }
+            return null;
+        }
+        private void sendPrivateMessage(String targetUser, String message) {
+            // Check if the target user is connected
+            synchronized (clientNames) {
+                boolean userFound = false;                  // To check if user exists
+                for (String name : clientNames) {         // Check if the target username matches the connected client name
+                    if (name.contains(targetUser)) {
+                        userFound = true;
+                        PrintWriter writer = findWriterForUser(name);
+                        if (writer != null) {
+                            writer.println("Private from " + this.clientName + ": " + message); // Send private message
+                        }
+                        break; // Exit loop after sending the message
+                    }
+                }
+                if (!userFound) {
+                    out.println("User " + targetUser + " is not online."); // Notify sender if user not found
+                }
+            }
+        }
+        private void broadcast(String message)
+        {
+            synchronized (clientWriters)
+            {
+                for (PrintWriter writer : clientWriters)
+                {
+                    writer.println(message);
+                }
+            }
+        }
+        private void updateOnlineClients() {
+            synchronized(clientWriters) {
+                StringBuilder onlineUsers = new StringBuilder("ONLINE_USERS:");
+                for (String name : clientNames) {
+                    onlineUsers.append(name).append(",");
+                }
+                String userList = onlineUsers.toString();
+
+                for (PrintWriter writer : clientWriters) {
+                    writer.println(userList); // Send the online users list to each client
+                }
+
+                // Server-side update of online users textarea
+                SwingUtilities.invokeLater(() -> {
+                    textarea2.setText("");
+                    for (String name : clientNames) {
+                        textarea2.append(name + "  "+"🟢\n"); // Add each client name with green dot
+                    }
+                });
+            }
+        }
+
+//        private void updateOnlineClients()
+//        {
+//            // Update the textarea with the list of connected clients
+//            SwingUtilities.invokeLater(() -> {
+//                textarea2.setText(""); // Clear the textarea
+//                for (String name : clientNames)
+//                {
+//                    textarea2.append(name + "\n"); // Add each client name
+//                }
+//            });
+//        }
+    }
+}

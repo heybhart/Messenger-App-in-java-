@@ -1,0 +1,36 @@
+💬 Java Messenger App
+A simple Java-based messenger application that allows multiple clients to connect to a single server for real-time communication. This project supports group chats, private chats, and shows a live list of connected users on both client and server sides.
+
+🚀 Features
+✅ Multiple Client Connections
+Clients can connect to the server simultaneously without any conflict.
+
+👥 Connected User List
+Displays the list of currently online users in real time, both on the server and client GUI.
+
+💬 Group Chat
+Messages sent by any user are broadcasted to all connected clients.
+
+🔒 Private Chat
+Users can send direct messages to specific users without others seeing it.
+
+🛠️ Technologies Used
+Java (Core)
+
+Java Swing (for GUI)
+
+Java Sockets (TCP/IP)
+
+📦 How to Run
+Start the Server:
+
+Run the server file Server.java
+
+Start Clients:
+
+Run the Client.java on multiple systems or multiple times on the same system.
+
+Chat Freely:
+
+Use the interface to select public or private chats.
+
