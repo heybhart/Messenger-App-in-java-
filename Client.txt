@@ -5,6 +5,11 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.*;
 
+/**
+ * Client - Java Messenger App
+ * Connects to the server and provides a GUI for sending/receiving messages.
+ * Supports broadcast and private messaging (@username: message).
+ */
 public class Client {
 
     private static final String SERVER_ADDRESS = "127.0.0.1";
@@ -12,123 +17,141 @@ public class Client {
 
     public static void main(String[] args) {
 
-        JFrame frame = new JFrame("Chat Application");
-        frame.setBounds(300, 150, 400, 600);
-        frame.setLayout(null);
+        // ─── Main Chat Window ───────────────────────────────────────────────
+        JFrame chatFrame = new JFrame("Messenger — Client");
+        chatFrame.setBounds(300, 150, 420, 620);
+        chatFrame.setLayout(null);
+        chatFrame.getContentPane().setBackground(new Color(30, 30, 30));
 
-
-        JLabel onlineLabel = new JLabel("ONLINE PERSONS");
-        onlineLabel.setBounds(50, 0, 300, 50);
-        onlineLabel.setFont(new Font("Monospaced", Font.BOLD, 20));
-        onlineLabel.setForeground(Color.GREEN);
-        frame.add(onlineLabel);
-
+        JLabel headerLabel = new JLabel("💬 Messenger");
+        headerLabel.setBounds(20, 5, 300, 45);
+        headerLabel.setFont(new Font("Monospaced", Font.BOLD, 20));
+        headerLabel.setForeground(new Color(0, 200, 100));
+        chatFrame.add(headerLabel);
 
         JTextArea chatArea = new JTextArea();
-        chatArea.setFont(new Font("Serif", Font.BOLD, 18));
-        chatArea.setEditable(false);  // Make it non-editable
-        chatArea.setBorder(BorderFactory.createEtchedBorder());
-
+        chatArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        chatArea.setEditable(false);
+        chatArea.setBackground(new Color(20, 20, 20));
+        chatArea.setForeground(new Color(220, 220, 220));
+        chatArea.setLineWrap(true);
+        chatArea.setWrapStyleWord(true);
+        chatArea.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         JScrollPane scrollPane = new JScrollPane(chatArea);
-        scrollPane.setBounds(0, 50, 380, 400);
+        scrollPane.setBounds(10, 55, 390, 460);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        frame.add(scrollPane);
-
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(60, 60, 60)));
+        chatFrame.add(scrollPane);
 
         JTextField msgInput = new JTextField();
-        msgInput.setBounds(30, 470, 200, 30);
-        frame.add(msgInput);
+        msgInput.setBounds(10, 530, 290, 38);
+        msgInput.setBackground(new Color(45, 45, 45));
+        msgInput.setForeground(Color.WHITE);
+        msgInput.setCaretColor(Color.WHITE);
+        msgInput.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        msgInput.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 200, 100)),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)
+        ));
+        chatFrame.add(msgInput);
 
+        JButton sendBtn = new JButton("Send ➤");
+        sendBtn.setBounds(310, 530, 100, 38);
+        sendBtn.setBackground(new Color(0, 150, 80));
+        sendBtn.setForeground(Color.WHITE);
+        sendBtn.setFocusPainted(false);
+        sendBtn.setFont(new Font("Monospaced", Font.BOLD, 13));
+        sendBtn.setBorderPainted(false);
+        sendBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        chatFrame.add(sendBtn);
 
-        JButton sendBtn = new JButton("Send");
-        sendBtn.setBounds(250, 470, 100, 30);
-        frame.add(sendBtn);
+        JLabel hintLabel = new JLabel("Tip: Use @username: message for private chat");
+        hintLabel.setBounds(10, 575, 390, 20);
+        hintLabel.setFont(new Font("Monospaced", Font.PLAIN, 11));
+        hintLabel.setForeground(new Color(120, 120, 120));
+        chatFrame.add(hintLabel);
 
-//        ===============================================   ONLINE PERSONS GUI ====================================================================
+        // ─── Online Users Window ─────────────────────────────────────────────
+        JFrame onlineFrame = new JFrame("🟢 Online Users");
+        onlineFrame.setLayout(null);
+        onlineFrame.setBounds(750, 150, 260, 400);
+        onlineFrame.getContentPane().setBackground(new Color(25, 25, 25));
 
+        JLabel onlineHeader = new JLabel("Online Now");
+        onlineHeader.setBounds(15, 8, 200, 35);
+        onlineHeader.setForeground(new Color(0, 200, 100));
+        onlineHeader.setFont(new Font("Monospaced", Font.BOLD, 15));
+        onlineFrame.add(onlineHeader);
 
-        JFrame frame2 = new JFrame("Online Persons");
-        frame2.setLayout(null);
-        frame2.setBounds(800, 150, 400, 400);
-        frame2.getContentPane().setBackground(new Color(72, 70, 68));
+        JTextArea onlineUsersArea = new JTextArea();
+        onlineUsersArea.setBounds(0, 50, 260, 330);
+        onlineUsersArea.setBackground(new Color(25, 25, 25));
+        onlineUsersArea.setForeground(new Color(200, 200, 200));
+        onlineUsersArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
+        onlineUsersArea.setEnabled(false);
+        onlineUsersArea.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 8));
+        onlineFrame.add(onlineUsersArea);
 
-        JLabel label2 = new JLabel("Client Online");
-        label2.setBounds(50, 0, 300, 40);
-        label2.setForeground(Color.green);
-        label2.setFont(new Font("heybabeMonospaced", Font.BOLD, 13));
-        frame2.add(label2);
+        onlineFrame.setVisible(true);
+        onlineFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JTextArea textarea2 = new JTextArea();
-        textarea2.setBounds(0,50,400,300);
-        textarea2.setBackground(new Color(72,70,68));
-        textarea2.setEnabled(false);
-        frame2.add(textarea2);
-
-        frame2.setVisible(true);
-        frame2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-
-
+        // ─── Socket Connection ───────────────────────────────────────────────
         try {
-            Socket socket = new Socket(SERVER_ADDRESS, PORT); // Connect to the server
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream())); // For receiving messages
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);  // For sending messages
+            Socket socket = new Socket(SERVER_ADDRESS, PORT);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
-
-            sendBtn.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    String msgToSend = msgInput.getText();
-                    if (!msgToSend.isEmpty()) {
-                        out.println(msgToSend);  // Send the message to the server
-                        chatArea.append("Me: " + msgToSend + "\n");  // Display the message in the chat area
-                        msgInput.setText("");
-                    }
+            // Send button action
+            ActionListener sendAction = e -> {
+                String msgToSend = msgInput.getText().trim();
+                if (!msgToSend.isEmpty()) {
+                    out.println(msgToSend);
+                    chatArea.append("  Me: " + msgToSend + "\n");
+                    msgInput.setText("");
+                    chatArea.setCaretPosition(chatArea.getDocument().getLength());
                 }
-            });
+            };
 
+            sendBtn.addActionListener(sendAction);
+            msgInput.addActionListener(sendAction); // Press Enter to send
+
+            // Incoming message listener thread
             new Thread(() -> {
                 String receivedMsg;
                 try {
                     while ((receivedMsg = in.readLine()) != null) {
                         if (receivedMsg.startsWith("ONLINE_USERS:")) {
-                            // This is the list of online users
-                            String[] users = receivedMsg.substring("ONLINE_USERS:".length()).split(","); // Split the message to get the user list
+                            String[] users = receivedMsg.substring("ONLINE_USERS:".length()).split(",");
                             SwingUtilities.invokeLater(() -> {
-                                textarea2.setText(""); // Clear the previous online users list
+                                onlineUsersArea.setText("");
                                 for (String user : users) {
                                     if (!user.trim().isEmpty()) {
-                                        textarea2.append(user + "  " + "🟢\n"); // Display each user with green dot
+                                        onlineUsersArea.append("🟢 " + user.trim() + "\n");
                                     }
                                 }
                             });
                         } else {
-                            // Regular chat message, display it in the chat area
-                            chatArea.append("Receive: " + receivedMsg + "\n");
+                            final String msg = receivedMsg;
+                            SwingUtilities.invokeLater(() -> {
+                                chatArea.append("  " + msg + "\n");
+                                chatArea.setCaretPosition(chatArea.getDocument().getLength());
+                            });
                         }
                     }
                 } catch (IOException ex) {
-                    ex.printStackTrace();
+                    SwingUtilities.invokeLater(() ->
+                            chatArea.append("\n[Disconnected from server]\n"));
                 }
             }).start();
 
-//            new Thread(() -> {
-//                String receivedMsg;
-//                try {
-//                    while ((receivedMsg = in.readLine()) != null) {
-//                        chatArea.append("Receive: " + receivedMsg + "\n");
-//                    }
-//                } catch (IOException ex) {
-//                    ex.printStackTrace();
-//                }
-//            }).start();
-
         } catch (IOException ex) {
-            ex.printStackTrace();
+            JOptionPane.showMessageDialog(chatFrame,
+                    "Could not connect to server at " + SERVER_ADDRESS + ":" + PORT,
+                    "Connection Error", JOptionPane.ERROR_MESSAGE);
         }
 
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
+        chatFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        chatFrame.setVisible(true);
     }
 }
